@@ -35,10 +35,11 @@ logger = logging.getLogger('__main__')
 
 local = settings.LOCAL_CONFIG
 
-mongo_client = MongoClient(local['MONGO_URI'])
-mongo_db = mongo_client[local['MONGO_DATABASE']]
-mongo_accounts = mongo_db[local['MONGO_ACCOUNTS']]
-mongo_users = mongo_db[local['MONGO_USERS']]
+
+def mongoCollection(cname):
+    mongo_client = MongoClient(local['MONGO_URI'])
+    mongo_db = mongo_client[local['MONGO_DATABASE']]
+    return mongo_db[local[cname]]
 
 redis_db = StrictRedis(
     host=local['REDIS_HOST'], 
@@ -52,6 +53,7 @@ login_session = {}
 @login_manager.user_loader
 def load_user(user_id):
     logger.debug(user_id)
+    mongo_users = mongoCollection('MONGO_USERS')
     user_info = mongo_users.find_one({'_id': ObjectId(user_id.decode('utf-8'))})
     logger.debug(user_info)
     return User(user_info)
@@ -118,11 +120,13 @@ def captcha_prepare(source, username):
 @app.route('/captcha_login/', methods=['GET'])
 @login_required
 def captcha_login_get():
+    mongo_accounts = mongoCollection('MONGO_ACCOUNTS')
     accounts = mongo_accounts.find({})
     return render_template('captcha_login.html', accounts=accounts)
 
 @app.route('/captcha_login/', methods=['POST'])
 def captcha_login_post():
+    mongo_accounts = mongoCollection('MONGO_ACCOUNTS')
     data = request.get_data().decode('utf-8')
     data = json.loads(data)
     logger.debug(data)
