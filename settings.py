@@ -2,7 +2,7 @@ import os
 import yaml
 
 # read local settings
-LOCAL_CONFIG_YAML = '/etc/amwatcher-flask.yml'
+LOCAL_CONFIG_YAML = '/etc/amwatcher-admin.yml'
 with open(LOCAL_CONFIG_YAML, 'r') as f:
     LOCAL_CONFIG = yaml.load(f)
 
