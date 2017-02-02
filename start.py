@@ -101,7 +101,7 @@ def login():
     return redirect(next)
 
 @app.route('/test/')
-def test(title, msg):
+def test():
     time.sleep(10)
     return render_template('notify.html', title='测试', msg='测试完成')
     
