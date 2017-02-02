@@ -31,9 +31,13 @@
             if (data['status']) {
               clearInterval(poll);
               console.log('登陆成功！OPEN_ID: '+ data['open_id']);
-              var url = window.location.href+'&open_id='+data['open_id'];
-              console.log('跳转至：'+url);
-              window.location.replace(url)
+              var next = window.location.href.match(/next=(.*)/);
+              if (next == null) {
+                next = '{{ url_for("notify", _external=True, title="登陆成功", msg="您可以继续访问其他网页") }}';
+              }
+              var url = next;
+              console.log('跳转至：'+next);
+              //window.location.replace(next);
             }
           }
         })

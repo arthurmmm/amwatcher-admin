@@ -61,14 +61,16 @@ def load_user(user_id):
 @app.route('/login/', methods=['GET', 'POST'])
 def login():
     open_id = request.args.get('open_id', '')
+    next = request.args.get('next', url_for('notify', _external=True, title='登陆成功', msg='登陆成功，您可以继续访问其他网页。'))
+    
     if not open_id:
         # PIN Login logic
         # Generate a 4-digit pin code
         # Bind pin code with HTML page
         # In HTML page, start rolling checking for pin_login view
-        for i in range(100):
-            pin_code = int(random.random() * 1000)
-            pin_code = str(pin_code).zfill(4)
+        for i in range(10): # Retry 10 times at most
+            pin_code = int(random.random() * 1000000)
+            pin_code = str(pin_code).zfill(6)
             pin_key = 'amwatcher:admin:pin:%s' % pin_code
             if not redis_db.exists(pin_key):
                 break
@@ -93,16 +95,14 @@ def login():
         user = User(user_info)
         login_user(user)
     logger.info('Login success')
-    next = request.args.get('next', '')
-    if not next:
-        next = url_for('error', _external=True, title=title, message=message)
-    return redirect(next or '/')
+    
+    return redirect(next)
 
     
 # Views
-@app.route('/error/<title>/<msg>/')
-def error(title, message):
-    return render_template('error.html', title=title, message=message)
+@app.route('/notify/<title>/<msg>/')
+def notify(title, msg):
+    return render_template('notify.html', title=title, msg=msg)
 
 @app.route('/pin/<pin_code>/', methods=['GET'])
 def pin_login(pin_code):

@@ -70,7 +70,7 @@ class RootHandler(Handler):
         ('^[!！]$', 'get_status'),
         ('^登陆$', 'set_logins'),
         ('^subscribe$', 'add_user'),
-        ('^\d{4}$', 'pin_login')
+        ('^\d{6}$', 'pin_login')
     ]
     
     def default_reply(self):
@@ -106,12 +106,12 @@ class RootHandler(Handler):
             return reply.TextMsg(
                 self.to_user, 
                 self.from_user, 
-                'PIN码错误！',
+                '您输入的PIN码不存在',
             )
         else:
             redis_db.setex(pin_key, 30, self.to_user)
             return reply.TextMsg(
                 self.to_user, 
                 self.from_user, 
-                '登陆成功！浏览器将自动跳转...',
+                '登陆成功！浏览器将自动跳转。',
             )

@@ -27,7 +27,7 @@ LOGGING = {
         '__main__': {
             'class': 'logging.handlers.RotatingFileHandler',
             'formatter': 'detailed',
-            'filename': '/var/tmp/amwatcher-flask.main.log',
+            'filename': '/data/logs/amwatcher-flask.main.log',
             'maxBytes': 1*1024*1024,
             'backupCount': 10,
         },
