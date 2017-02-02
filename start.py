@@ -12,7 +12,7 @@ import random
 from datetime import datetime
 from functools import wraps
 
-from flask import Flask, render_template, request, make_response, jsonify, session, escape, redirect
+from flask import Flask, render_template, request, make_response, jsonify, session, escape, redirect, url_for
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from pymongo import MongoClient
 from redis import StrictRedis
@@ -58,7 +58,7 @@ def load_user(user_id):
     logger.debug(user_info)
     return User(user_info)
     
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login/', methods=['GET', 'POST'])
 def login():
     open_id = request.args.get('open_id', '')
     if not open_id:
@@ -93,10 +93,18 @@ def login():
         user = User(user_info)
         login_user(user)
     logger.info('Login success')
-    next = request.args.get('next')
+    next = request.args.get('next', '')
+    if not next:
+        next = url_for('error', _external=True, title=title, message=message)
     return redirect(next or '/')
 
-@app.route('/pin/<pin_code>', methods=['GET'])
+    
+# Views
+@app.route('/error/<title>/<msg>/')
+def error(title, message):
+    return render_template('error.html', title=title, message=message)
+
+@app.route('/pin/<pin_code>/', methods=['GET'])
 def pin_login(pin_code):
     ''' accquire by ajax page, getting pin status
     Check redis key, if user send pin code in wechat, open_id will be set on redis
@@ -109,8 +117,6 @@ def pin_login(pin_code):
     else:
         return jsonify({'status': True, 'open_id': pin_val.decode('utf-8')})
     
-    
-# Views
 @app.route('/captcha_prepare/<source>/<username>/', methods=['GET'])
 def captcha_prepare(source, username):
     session, data = pylogins.bilibili_login.prepare()
@@ -131,7 +137,7 @@ def captcha_login_post():
     data = json.loads(data)
     logger.debug(data)
     if data['username'] not in login_session:
-        return jsonify({'status': False, 'message': {'reason': '请刷新验证码'}})
+        return jsonify({'status': False, 'message': {'reason': '更换用户名后请刷新验证码'}})
     session = login_session[data['username']]
     cookies, result = pylogins.bilibili_login.login(data['username'], data['password'], data['captcha'], session)
     # Write cookie to mongo
@@ -185,8 +191,8 @@ def wechat_post():
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    # parser.add_argument('-p', '--port', default=settings.PORT, metavar='PORT')
-    # parser.add_argument('-a', '--address', default=settings.ADDRESS, metavar='IP_ADDRESS')
+    parser.add_argument('-p', '--port', default=settings.PORT, metavar='PORT')
+    parser.add_argument('-a', '--address', default=settings.ADDRESS, metavar='IP_ADDRESS')
     parser.add_argument('--debug', default=False, action='store_true')
     args = parser.parse_args()
     
