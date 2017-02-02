@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 #coding=utf-8
+from gevent import monkey
+monkey.patch_all()
 
 import os
 import time
@@ -35,7 +37,6 @@ logging.config.dictConfig(settings.LOGGING)
 logger = logging.getLogger('__main__')
 
 local = settings.LOCAL_CONFIG
-
 
 def mongoCollection(cname):
     mongo_client = MongoClient(local['MONGO_URI'])
