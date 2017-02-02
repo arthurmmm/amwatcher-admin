@@ -2,6 +2,7 @@
 #coding=utf-8
 
 import os
+import time
 import logging
 import logging.config
 import argparse
@@ -98,8 +99,11 @@ def login():
     
     return redirect(next)
 
+@app.route('/test/')
+def test(title, msg):
+    time.sleep(10)
+    return render_template('notify.html', title='测试', msg='测试完成')
     
-# Views
 @app.route('/notify/<title>/<msg>/')
 def notify(title, msg):
     return render_template('notify.html', title=title, msg=msg)
