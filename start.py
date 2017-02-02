@@ -28,6 +28,7 @@ app = Flask(__name__, template_folder=tmpl_dir)
 login_manager = LoginManager()
 login_manager.login_view = "login"
 login_manager.init_app(app)
+app.secret_key = ']~\xa1\x81\xe6\xf0\xe9\x1c\x02\xf9\x10\xdb\xa9|%\xb3\xcb(\x95\x0b\xc2\xbe>\x90'
 
 logging.config.dictConfig(settings.LOGGING)
 logger = logging.getLogger('__main__')
@@ -186,5 +187,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     app.debug = args.debug
-    app.secret_key = ']~\xa1\x81\xe6\xf0\xe9\x1c\x02\xf9\x10\xdb\xa9|%\xb3\xcb(\x95\x0b\xc2\xbe>\x90'
     app.run(host='0.0.0.0', port=5000)
