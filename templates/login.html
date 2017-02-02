@@ -1,0 +1,51 @@
+<html>
+  <title>点剧需要认证您的身份</title>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" />
+    <style>
+      .center-block {  
+          text-align: center;
+          position: absolute;
+          top: 50%;
+          -webkit-transform: translateY(-50%);
+          -moz-transform:  translateY(-50%);
+          -ms-transform:  translateY(-50%);
+          -o-transform:  translateY(-50%);
+          transform:  translateY(-50%);
+      }  
+    </style>
+    <script>
+      
+      var poll = setInterval(function(){
+        console.log('Checking login status');
+        $.ajax({
+          type: 'GET',
+          url: '{{ url_for("pin_login", _external=True, pin_code=pin_code) }}',
+          success: function(data){
+            console.log(data);
+            if (data['status']) {
+              clearInterval(poll);
+              console.log('登陆成功！OPEN_ID: '+ data['open_id']);
+              var url = window.location.href+'&open_id='+data['open_id'];
+              console.log('跳转至：'+url);
+              window.location.replace(url)
+            }
+          }
+        })
+      }, 2000);
+    </script>
+  </head>
+  <body>
+    <div class="col-xs-12 center-block">
+      <h1>Hello，您访问的页面需要身份认证</h1>
+      <h1>请扫描二维码关注公众号，然后发送屏幕上的PIN码给公众号</h1>
+      <h1>PIN: {{pin_code}}  (120秒内有效)</h1>
+      <img src="http://oknjwvpif.bkt.clouddn.com/images/qrcode_for_gh_141e4b5da2ba_344.jpg"></img>
+    </div>
+  </body>
+</html>
