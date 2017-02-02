@@ -41,7 +41,7 @@ local = settings.LOCAL_CONFIG
 def mongoCollection(cname):
     mongo_client = MongoClient(local['MONGO_URI'])
     mongo_db = mongo_client[local['MONGO_DATABASE']]
-    return mongo_db[local[cname]]
+    return mongo_db[cname]
 
 redis_db = StrictRedis(
     host=local['REDIS_HOST'], 
@@ -55,7 +55,7 @@ login_session = {}
 @login_manager.user_loader
 def load_user(user_id):
     logger.debug(user_id)
-    mongo_users = mongoCollection('MONGO_USERS')
+    mongo_users = mongoCollection('users')
     user_info = mongo_users.find_one({'_id': ObjectId(user_id.decode('utf-8'))})
     logger.debug(user_info)
     return User(user_info)
@@ -64,7 +64,7 @@ def load_user(user_id):
 def login():
     open_id = request.args.get('open_id', '')
     next = request.args.get('next', url_for('notify', _external=True, title='登陆成功', msg='登陆成功，您可以继续访问其他网页。'))
-    mongo_users = mongoCollection('MONGO_USERS')
+    mongo_users = mongoCollection('users')
     if not open_id:
         # PIN Login logic
         # Generate a 4-digit pin code
@@ -83,19 +83,10 @@ def login():
         
     user_info = mongo_users.find_one({'open_id': open_id})
     logger.debug(user_info)
-    if user_info:
-        user = User(user_info)
-        login_user(user)
-    else:
-        # Register and login
-        mongo_users.insert({
-            'open_id': open_id,
-            'role': 'user',
-            'display_name': 'Unknown',
-        })
-        user_info = mongo_users.find_one({'open_id': open_id})
-        user = User(user_info)
-        login_user(user)
+    if not user_info:
+        return render_template('login.html')
+    user = User(user_info)
+    login_user(user)
     logger.info('Login success')
     
     return redirect(next)
@@ -134,13 +125,13 @@ def captcha_login_get():
     logger.debug(current_user.role)
     if not current_user.is_authenticated():
         return render_template('notify.html', title='权限不足', msg='您没有足够的权限浏览该页面')
-    mongo_accounts = mongoCollection('MONGO_ACCOUNTS')
+    mongo_accounts = mongoCollection('accounts')
     accounts = mongo_accounts.find({})
     return render_template('captcha_login.html', accounts=accounts)
 
 @app.route('/captcha_login/', methods=['POST'])
 def captcha_login_post():
-    mongo_accounts = mongoCollection('MONGO_ACCOUNTS')
+    mongo_accounts = mongoCollection('accounts')
     data = request.get_data().decode('utf-8')
     data = json.loads(data)
     logger.debug(data)

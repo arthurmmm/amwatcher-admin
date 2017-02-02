@@ -5,9 +5,11 @@ class User(object):
     _id = ''
     display_name = ''
     open_id = ''
-    role = ''
+    role = 'user'
     
     def __init__(self, user_info):
+        if not user_info:
+            return None
         for k,v in user_info.items():
             setattr(self, k, v)
     

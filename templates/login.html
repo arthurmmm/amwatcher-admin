@@ -22,53 +22,60 @@
         color: red;
       }
     </style>
-    <script>
-      var timeout = 120;
-      var poll = setInterval(function(){
-        console.log('Checking login status, timeout: '+timeout);
-        $('#pin_msg').html('PIN: {{pin_code}}  ('+timeout+'秒内有效)');
-        // Request after every 3 seconds
-        if (timeout % 3 == 0) {
-          $.ajax({
-            type: 'GET',
-            url: '{{ url_for("pin_login", _external=True, pin_code=pin_code) }}',
-            success: function(data){
-              console.log(data);
-              if (data['status']) {
-                clearInterval(poll);
-                console.log('登陆成功！OPEN_ID: '+ data['open_id']);
-                var next = window.location.href.match(/next=(.*)/);
-                var url = '{{ url_for("notify", _external=True, title="登陆成功", msg="您可以继续访问其他网页") }}';
-                if (next == null) {
-                  url = '{{ url_for("notify", _external=True, title="登陆成功", msg="您可以继续访问其他网页") }}';
-                } else {
-                  url = window.location.href+'&open_id='+data['open_id'];
+    {% if pin_code %}
+      <script>
+        var timeout = 120;
+        var pin_code = '{{pin_code}}'
+        var poll = setInterval(function(){
+          console.log('Checking login status, timeout: '+timeout);
+          $('#pin_msg').html('PIN: {{pin_code}}  ('+timeout+'秒内有效)');
+          // Request after every 3 seconds
+          if (timeout % 3 == 0) {
+            $.ajax({
+              type: 'GET',
+              url: '{{ url_for("pin_login", _external=True, pin_code=pin_code) }}',
+              success: function(data){
+                console.log(data);
+                if (data['status']) {
+                  clearInterval(poll);
+                  console.log('登陆成功！OPEN_ID: '+ data['open_id']);
+                  var next = window.location.href.match(/next=(.*)/);
+                  var url = '{{ url_for("notify", _external=True, title="登陆成功", msg="您可以继续访问其他网页") }}';
+                  if (next == null) {
+                    url = '{{ url_for("notify", _external=True, title="登陆成功", msg="您可以继续访问其他网页") }}';
+                  } else {
+                    url = window.location.href+'&open_id='+data['open_id'];
+                  }
+                  console.log('跳转至：'+url);
+                  window.location.replace(url);
                 }
-                console.log('跳转至：'+url);
-                window.location.replace(url);
+              },
+              error: function(xhr) {
+                clearInterval(poll);
+                $('#pin_msg').addClass('expire');
+                $('#pin_msg').html('登陆服务器出现了一点故障，请稍后再试...');
               }
-            },
-            error: function(xhr) {
-              clearInterval(poll);
-              $('#pin_msg').addClass('expire');
-              $('#pin_msg').html('登陆服务器出现了一点故障，请稍后再试...');
-            }
-          });
-        }
-        if (timeout == 0) {
-          clearInterval(poll);
-          $('#pin_msg').addClass('expire');
-          $('#pin_msg').html('PIN码已失效，请刷新页面重新获取');
-        }
-        timeout = timeout - 1;
-      }, 1000);
-    </script>
+            });
+          }
+          if (timeout == 0) {
+            clearInterval(poll);
+            $('#pin_msg').addClass('expire');
+            $('#pin_msg').html('PIN码已失效，请刷新页面重新获取');
+          }
+          timeout = timeout - 1;
+        }, 1000);
+      </script>
+    {% endif %}
   </head>
   <body>
     <div class="col-xs-12 center-block">
       <h1>您正在访问的页面需要微信用户认证</h1>
-      <h1>请扫码关注公众号，并通过聊天窗口发送屏幕上的PIN码</h1>
-      <h1 id="pin_msg">PIN: {{pin_code}}  (120秒内有效)</h1>
+      {% if pin_code %}
+        <h1>请扫码关注公众号，并通过聊天窗口发送屏幕上的PIN码</h1>
+        <h1 id="pin_msg">PIN: {{pin_code}}  (120秒内有效)</h1>
+      {% else %}
+        <h1>请扫码关注公众号</h1>
+      {% endif %}
       <img src="http://oknjwvpif.bkt.clouddn.com/images/qrcode_for_gh_141e4b5da2ba_344.jpg"></img>
     </div>
   </body>

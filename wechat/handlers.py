@@ -18,6 +18,10 @@ redis_db = StrictRedis(
     password=local['REDIS_PASSWORD'],
     db=local['REDIS_DB']
 )
+def mongoCollection(cname):
+    mongo_client = MongoClient(local['MONGO_URI'])
+    mongo_db = mongo_client[local['MONGO_DATABASE']]
+    return mongo_db[cname]
 
 def getHandler(msg):
     hkey = 'amwatcher:admin:context:%s' % msg.FromUserName
@@ -31,10 +35,11 @@ def getHandler(msg):
     return hcls(msg)
 
 class Handler(object):
-    router = []
+    router = {}
     
     def __init__(self, msg):
         self.msg = msg
+        self.msg_type = msg.MsgType
         self.to_user = msg.FromUserName
         self.from_user = msg.ToUserName
         self.hkey = 'amwatcher:admin:context:%s' % self.to_user
@@ -46,7 +51,8 @@ class Handler(object):
             self.router_key = 'default'
     
     def reply(self):
-        for pattern, fname in self.router:
+        router = self.router[self.msg_type]
+        for pattern, fname in router:
             regex = re.compile(pattern)
             if regex.match(self.router_key):
                 func = getattr(self, fname)
@@ -65,13 +71,18 @@ class Handler(object):
         )
 
 class RootHandler(Handler):
-    router = [
-        ('^[\?\？]$', 'show_help'),
-        ('^[!！]$', 'get_status'),
-        ('^登陆$', 'set_logins'),
-        ('^subscribe$', 'add_user'),
-        ('^\d{6}$', 'pin_login')
-    ]
+    router = {
+        'text': [
+            ('^[\?\？]$', 'show_help'),
+            ('^[!！]$', 'get_status'),
+            ('^登陆$', 'set_logins'),
+            ('^\d{6}$', 'pin_login')
+        ],
+        'event': [
+            ('^subscribe$', 'active_user'),
+            ('^unsubscribe$', 'deactive_user'),
+        ],
+    }
     
     def default_reply(self):
         return self.show_help()
@@ -115,3 +126,42 @@ class RootHandler(Handler):
                 self.from_user, 
                 '登陆成功！浏览器将自动跳转。',
             )
+            
+    def active_user(self):
+        mongo_user = mongoCollection('users')
+        res = mongo_user.update({
+            'open_id': self.to_user,
+        },{
+            '$set': {
+                'active': True,
+                'open_id': self.to_user,
+            }
+        }, upsert=True)
+        user_exists = res['updatedExisting']
+        if user_exists:
+            return reply.TextMsg(
+                self.to_user, 
+                self.from_user, 
+                '欢迎回来！',
+            )
+        else:
+            return reply.TextMsg(
+                self.to_user, 
+                self.from_user, 
+                '感谢关注！',
+            )
+    
+    def deactive_user(self):
+        mongo_user = mongoCollection('users')
+        mongo_user.update({
+            'open_id': self.to_user,
+        },{
+            '$set': {
+                'active': False,
+            }
+        })
+        return reply.TextMsg(
+            self.to_user, 
+            self.from_user, 
+            'See you',
+        )
