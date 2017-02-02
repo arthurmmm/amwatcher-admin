@@ -1,2 +1,2 @@
-# amwatcher-flask
-Flask server for amwatcher
+# amwatcher-admin
+The backend admin server for amwatcher. Built on Flask and WeChat.
