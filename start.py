@@ -130,6 +130,9 @@ def captcha_prepare(source, username):
 @app.route('/captcha_login/', methods=['GET'])
 @login_required
 def captcha_login_get():
+    logger.debug(current_user.role)
+    if not current_user.is_authenticated():
+        return render_template('notify.html', title='权限不足', msg='您没有足够的权限浏览该页面')
     mongo_accounts = mongoCollection('MONGO_ACCOUNTS')
     accounts = mongo_accounts.find({})
     return render_template('captcha_login.html', accounts=accounts)
