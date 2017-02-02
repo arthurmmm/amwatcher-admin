@@ -62,7 +62,7 @@ def load_user(user_id):
 def login():
     open_id = request.args.get('open_id', '')
     next = request.args.get('next', url_for('notify', _external=True, title='登陆成功', msg='登陆成功，您可以继续访问其他网页。'))
-    
+    mongo_users = mongoCollection('MONGO_USERS')
     if not open_id:
         # PIN Login logic
         # Generate a 4-digit pin code
