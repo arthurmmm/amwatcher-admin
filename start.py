@@ -77,7 +77,7 @@ def login():
                 break
         else:
             return '错误：找不到可用的PIN码'
-        redis_db.setex(pin_key, 120, 'EMPTY')
+        redis_db.setex(pin_key, 125, 'EMPTY') # Expire after 120 sec, add another 5 sec for network delay
         return render_template('login.html', pin_code=pin_code)
         
     user_info = mongo_users.find_one({'open_id': open_id})
