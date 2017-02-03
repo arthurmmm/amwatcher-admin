@@ -5,6 +5,7 @@ class User(object):
     _id = ''
     display_name = ''
     open_id = ''
+    active = True
     role = 'user'
     
     def __init__(self, user_info):
@@ -17,7 +18,7 @@ class User(object):
         res = (self.role == 'admin')
         return res
     def is_active(self):
-        return True
+        return self.active
     def is_anonymous(self):
         return False
     def get_id(self):

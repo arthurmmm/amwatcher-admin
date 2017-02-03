@@ -10,6 +10,7 @@ import logging.config
 import argparse
 import hashlib
 import requests
+from requests.utils import add_dict_to_cookiejar, dict_from_cookiejar
 import json
 import random
 from datetime import datetime
@@ -49,8 +50,10 @@ redis_db = StrictRedis(
     password=local['REDIS_PASSWORD'],
     db=local['REDIS_DB']
 )
+PIN_KEY = 'amwatcher:admin:pin:%s'
+LOGIN_KEY = 'amwatcher:admin:login_session:%s'
 
-login_session = {}
+# login_session = {}
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -73,7 +76,7 @@ def login():
         for i in range(10): # Retry 10 times at most
             pin_code = int(random.random() * 1000000)
             pin_code = str(pin_code).zfill(6)
-            pin_key = 'amwatcher:admin:pin:%s' % pin_code
+            pin_key = PIN_KEY % pin_code
             if not redis_db.exists(pin_key):
                 break
         else:
@@ -106,7 +109,7 @@ def pin_login(pin_code):
     Check redis key, if user send pin code in wechat, open_id will be set on redis
     if key was set, return login page with open_id and redirect to next
     '''
-    pin_key = 'amwatcher:admin:pin:%s' % pin_code
+    pin_key = PIN_KEY % pin_code
     pin_val = redis_db.get(pin_key)
     if not pin_val or pin_val.decode('utf-8') == 'EMPTY':
         return jsonify({'status': False})
@@ -116,7 +119,8 @@ def pin_login(pin_code):
 @app.route('/captcha_prepare/<source>/<username>/', methods=['GET'])
 def captcha_prepare(source, username):
     session, data = pylogins.bilibili_login.prepare()
-    login_session[username] = session
+    redis_db.set(LOGIN_KEY % username, json.dumps(dict_from_cookiejar(session.cookies)))
+    logger.debug('Store cookie dict in redis key: %s' % (LOGIN_KEY % username))
     return data
 
 @app.route('/captcha_login/', methods=['GET'])
@@ -135,9 +139,13 @@ def captcha_login_post():
     data = request.get_data().decode('utf-8')
     data = json.loads(data)
     logger.debug(data)
-    if data['username'] not in login_session:
+    login_cookie = redis_db.get(LOGIN_KEY % data['username'])
+    if not login_cookie:
         return jsonify({'status': False, 'message': {'reason': '更换用户名后请刷新验证码'}})
-    session = login_session[data['username']]
+    login_cookie = json.loads(login_cookie.decode('utf-8'))
+    session = requests.Session()
+    login_cookie_jar = add_dict_to_cookiejar(session.cookies, login_cookie)
+    # session = login_session[data['username']]
     cookies, result = pylogins.bilibili_login.login(data['username'], data['password'], data['captcha'], session)
     # Write cookie to mongo
     if cookies:
