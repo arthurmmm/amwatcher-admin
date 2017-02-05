@@ -9,6 +9,10 @@ with open(LOCAL_CONFIG_YAML, 'r') as f:
 PORT = 5000
 ADDRESS = '0.0.0.0'
 
+CONTEXT_KEY = 'amwatcher:admin:context:%s'
+PIN_KEY = 'amwatcher:admin:pin:%s'
+LOGIN_KEY = 'amwatcher:admin:login_session:%s'
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

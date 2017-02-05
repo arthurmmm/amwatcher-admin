@@ -50,8 +50,6 @@ redis_db = StrictRedis(
     password=local['REDIS_PASSWORD'],
     db=local['REDIS_DB']
 )
-PIN_KEY = 'amwatcher:admin:pin:%s'
-LOGIN_KEY = 'amwatcher:admin:login_session:%s'
 
 # login_session = {}
 
@@ -76,7 +74,7 @@ def login():
         for i in range(10): # Retry 10 times at most
             pin_code = int(random.random() * 1000000)
             pin_code = str(pin_code).zfill(6)
-            pin_key = PIN_KEY % pin_code
+            pin_key = settings.PIN_KEY % pin_code
             if not redis_db.exists(pin_key):
                 break
         else:
@@ -104,7 +102,7 @@ def pin_login(pin_code):
     Check redis key, if user send pin code in wechat, open_id will be set on redis
     if key was set, return login page with open_id and redirect to next
     '''
-    pin_key = PIN_KEY % pin_code
+    pin_key = settings.PIN_KEY % pin_code
     pin_val = redis_db.get(pin_key)
     if not pin_val or pin_val.decode('utf-8') == 'EMPTY':
         return jsonify({'status': False})
@@ -114,8 +112,8 @@ def pin_login(pin_code):
 @app.route('/console/captcha_prepare/<source>/<username>/', methods=['GET'])
 def captcha_prepare(source, username):
     session, data = pylogins.bilibili_login.prepare()
-    redis_db.set(LOGIN_KEY % username, json.dumps(dict_from_cookiejar(session.cookies)))
-    logger.debug('Store cookie dict in redis key: %s' % (LOGIN_KEY % username))
+    redis_db.set(settings.LOGIN_KEY % username, json.dumps(dict_from_cookiejar(session.cookies)))
+    logger.debug('Store cookie dict in redis key: %s' % (settings.LOGIN_KEY % username))
     return data
 
 @app.route('/console/captcha_login/', methods=['GET'])
@@ -134,7 +132,7 @@ def captcha_login_post():
     data = request.get_data().decode('utf-8')
     data = json.loads(data)
     logger.debug(data)
-    login_cookie = redis_db.get(LOGIN_KEY % data['username'])
+    login_cookie = redis_db.get(settings.LOGIN_KEY % data['username'])
     if not login_cookie:
         return jsonify({'status': False, 'message': {'reason': '更换用户名后请刷新验证码'}})
     login_cookie = json.loads(login_cookie.decode('utf-8'))

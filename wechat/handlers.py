@@ -18,13 +18,14 @@ redis_db = StrictRedis(
     password=local['REDIS_PASSWORD'],
     db=local['REDIS_DB']
 )
+
 def mongoCollection(cname):
     mongo_client = MongoClient(local['MONGO_URI'])
     mongo_db = mongo_client[local['MONGO_DATABASE']]
     return mongo_db[cname]
 
 def getHandler(msg):
-    hkey = 'amwatcher:admin:context:%s' % msg.FromUserName
+    hkey = settings.CONTEXT_KEY % msg.FromUserName
     target_handler = redis_db.get(hkey)
     if target_handler:
         target_handler = target_handler.decode('utf-8')
@@ -42,7 +43,7 @@ class Handler(object):
         self.msg_type = msg.MsgType
         self.to_user = msg.FromUserName
         self.from_user = msg.ToUserName
-        self.hkey = 'amwatcher:admin:context:%s' % self.to_user
+        self.hkey = settings.CONTEXT_KEY % self.to_user
         if isinstance(msg, receive.TextMsg):
             self.router_key = msg.Content.decode('utf-8')
         elif isinstance(msg, receive.EventMsg):
@@ -111,7 +112,7 @@ class RootHandler(Handler):
         )
         
     def pin_login(self):
-        pin_key = 'amwatcher:admin:pin:%s' % self.router_key
+        pin_key = settings.PIN_KEY % self.router_key
         pin_val = redis_db.get(pin_key)
         if not pin_val:
             return reply.TextMsg(
