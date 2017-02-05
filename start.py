@@ -63,7 +63,7 @@ def load_user(user_id):
     logger.debug(user_info)
     return User(user_info)
     
-@app.route('/login/', methods=['GET', 'POST'])
+@app.route('/console/login/', methods=['GET', 'POST'])
 def login():
     open_id = request.args.get('open_id', '')
     next = request.args.get('next', url_for('notify', _external=True, title='登陆成功', msg='登陆成功，您可以继续访问其他网页。'))
@@ -93,17 +93,12 @@ def login():
     logger.info('Login success')
     
     return redirect(next)
-
-@app.route('/test/')
-def test():
-    time.sleep(10)
-    return render_template('notify.html', title='测试', msg='测试完成')
     
-@app.route('/notify/<title>/<msg>/')
+@app.route('/console/notify/<title>/<msg>/')
 def notify(title, msg):
     return render_template('notify.html', title=title, msg=msg)
 
-@app.route('/pin/<pin_code>/', methods=['GET'])
+@app.route('/console/pin/<pin_code>/', methods=['GET'])
 def pin_login(pin_code):
     ''' accquire by ajax page, getting pin status
     Check redis key, if user send pin code in wechat, open_id will be set on redis
@@ -116,14 +111,14 @@ def pin_login(pin_code):
     else:
         return jsonify({'status': True, 'open_id': pin_val.decode('utf-8')})
     
-@app.route('/captcha_prepare/<source>/<username>/', methods=['GET'])
+@app.route('/console/captcha_prepare/<source>/<username>/', methods=['GET'])
 def captcha_prepare(source, username):
     session, data = pylogins.bilibili_login.prepare()
     redis_db.set(LOGIN_KEY % username, json.dumps(dict_from_cookiejar(session.cookies)))
     logger.debug('Store cookie dict in redis key: %s' % (LOGIN_KEY % username))
     return data
 
-@app.route('/captcha_login/', methods=['GET'])
+@app.route('/console/captcha_login/', methods=['GET'])
 @login_required
 def captcha_login_get():
     logger.debug(current_user.role)
@@ -133,7 +128,7 @@ def captcha_login_get():
     accounts = mongo_accounts.find({})
     return render_template('captcha_login.html', accounts=accounts)
 
-@app.route('/captcha_login/', methods=['POST'])
+@app.route('/console/captcha_login/', methods=['POST'])
 def captcha_login_post():
     mongo_accounts = mongoCollection('accounts')
     data = request.get_data().decode('utf-8')
@@ -161,7 +156,7 @@ def captcha_login_post():
         })
     return jsonify(result)
     
-@app.route('/', methods=['GET'])
+@app.route('/console/', methods=['GET'])
 def wechat_get():
     ''' Token validation logic 
     '''
@@ -185,7 +180,7 @@ def wechat_get():
     else:
         return ''
         
-@app.route('/', methods=['POST'])
+@app.route('/console/', methods=['POST'])
 def wechat_post():
     ''' WeChat reply bot
     '''
